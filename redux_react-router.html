@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+Redux
+		Store部分
+			import {createStore} from "redux";    redux提供createStore函数生成store
+			const store=createStore(fn)           fn==>reducer.js  每当store.dispatch 发送过来一个action，就好自动调用reducer,得到新的State
+			const state=store.getStore()          获取当前状态
+		store.dispatch()是发出action的唯一方法
+
+
+
+		Action部分
+			action是个对象,type属性是必须的，其他属性可以自由设置
+			const action={
+				type:"ADD_TODO",
+				playload:"Learn Redux"
+			}
+		Action Creator
+			用来创造action
+			const ADD_TODO="添加 TODO"
+			function addTodo(text){
+				return {
+					type:ADD_TODO,
+					text
+				}
+			}
+
+
+		Reducer 纯函数，用于接受当前state和action返回一个新的state
+			const defaultState=0;
+			const reducer=(state=defaultState,action={})=>{
+				const {type,playload}=action;
+				switch(type){
+					case a: 
+						return Object.assgin({},state)
+					default:
+						return state
+				}
+			}
+			import {combineReducers} from "redux";  
+			const reducers=combineReducers({		将多个reducers函数合并为一个，每个reducer函数对应一个state，State的属性名必须与字reducer同名，否则采用{k:v}写法	
+				chatlog,
+				username
+			})
+			export default reducers;
+
+
+		中间件
+			import {applyMiddleware,createStore} from "redux";					   Action Creator返回函数时用 redux-thunk中间件
+			import thunk from "redux-thunk";									   redux-thunk中间件可使 dispatch() 参数变为函数
+			const store=createStore(fn,applyMiddleware(thunk, promise, logger))    中间件次序有讲究
+
+			import promiseMiddleware from "redux-promise"						   Action Creator返回promise对象时用redux-promise中间件
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+React-Redux    用于衔接react与redux，将组件分为UI组件和容器组件
+
+				UI组件：只负责UI的呈现,不带任何业务逻辑
+						没有状态(即不适用this.state这个变量)
+						所有数据都有this.props提供
+						不适用任何redux的API
+			  容器组件: 负责管理数据和业务逻辑，不负责UI的呈现
+						带有内部状态
+						使用redux的API
+			
+
+			1.connect        用于从UI组件生成容器组件
+				eg:
+				 	import {connect} from "react-redux";
+					class Todo extends React.Component{
+
+					}
+					const VisibleTodo=connect(mapStateToProps,mapDispatchToProps)(Todo);
+				1>mapStateToProps(store,ownProps)是一个函数,用来建立一个外部状态(state)与(UI组件的)属性对象(props)之间的映射关系
+						ownProps==>代表容器组件的props对象
+					eg:
+					const {todo,list}=this.props
+						function select(store){
+							return {
+									todo:store.a,
+									list:store.b
+								  }
+						}
+					const todos= connect(select)(Todo)
+				2>mapDispatchToProps()用来建立UI组件的参数到store.dispatch方法的映射，可以是函数，也可以是对象
+					1）函数，会得到dispatch和ownProps(容器组件的props对象)两个参数,函数返回一个对象，键值对是映射，定义如何发出action
+									eg:
+										class Add extends React.Component{
+											render(){
+												return (<div>
+													<button onClick={onIncreaseClick}>Add</button>
+												</div>)
+											}
+										}
+
+									function mapDispatchToProps(dispatch){
+										return {
+												onIncreaseClick:()=>{ dispatch({type:'ADD_TODO',filter:"哈哈"})}
+											}
+									}
+
+					2)对象，每个键名也是对应UI组件的同名参数，会被当作Action Creator,返回的action会被Redux自动发出
+						const mapDispatchProps={
+							onIncreaseClick:(filter)=>{
+							return {
+								type:"ADD_TODO",
+								filter:filter
+								}
+							}
+						}
+				2.provider 让容器组件拿到state
+					import {provider} from "react-redux";    原理为React 的context
+					provider在跟组件包一层，这样所有子组件默认就可以拿到state
+					<Provider store={store}>
+						<App>
+					</Provider>
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+React-Router
+	import {Router,Route} from "react-router"
+	<Router history={hashHistory/browerHistory}>		//hashHistory:路由切换由URL的hash值决定
+		<Route path="/" component={App}/>
+		<Route path="/About" component={About}}/>		//route 中path值以"/"开头,均表示绝对路径,否则路由为父组件路径与子组件路径的组合
+	</Router>
+	父组件要写成
+		class A extends React.Component{
+			render(){
+				return (<div>
+					{this.props.children}
+				</div>)
+			}
+		}
+
+	Route 的path属性指定路由的匹配规则,这个属性可省略,这样的话,不管是否匹配,总是会加载指定的组件
+
+	<Route path="inbox" component={Inbox}>
+   		<Route path="messages/:id" component={Message} />
+	</Route>
+	==>>等价于
+	<Route component={Inbox}>
+  		<Route path="inbox/messages/:id" component={Message} />
+	</Route>
+	
+   Path属性的匹配规则
+		<Route path="/hello/:name"/>  		//:name 路径参数可通过this.props.params.name取出
+		匹配 /hello/a
+		匹配 /hello/b
+		<Route path="/hello(/:name)"/>		//()表示URL的这个部分是可选的
+		匹配 /hello
+		匹配 /hello/a
+		匹配 /hello/b
+		<Route path="/file/*.*"/>
+		匹配 /file/a.b
+		匹配 /file/c.d
+		<Route path="/file/*"/>
+		匹配 /file/
+		匹配 /file/a
+		匹配 /file/a/b
+		<Route path="/**/*.jpg">
+		匹配  /file/a.jpg
+		匹配  /file/cc/dd/a.jpg
+
+ 	路由匹配规则是从上到下执行，一旦发现匹配，就不再其余的规则了。
+ 	URL的查询字符串/foo?bar=baz，可以用this.props.location.query.bar获取
+
+	 <IndexRoute component={Home}/>  即指定默认情况下加载的子组件
+	   IndexRoute组件没有路径参数path。
+
+	<Redirect from="" to=""/> //路由重定向,用于路由间的跳转   ,可放在最后,当出现都匹配不上时,跳转到指定路径
+
+	<IndexRedirect to=""/>    //用于访问根路由时将用户种定向到某个子组件  ,一般用来代替 <Indexroute/>
+
+	<Link to=""/>					 		    //用于取代<a>,当用户的点击时,生成链接,跳转到指定路由,to跳转到指定的路由
+	<Link activeClassName="active"/>			//用户点击时添加此类名
+	<Link activeStyle={}/>						//用户点击时添加此样式
+	<IndexLink to="/"  activeClassName="active"/>								//用于链接到根路由
+	
+	用于表单跳转
+		import {browerHistory} from "react-router"
+
+		class Demo extends React.Component{
+			 handleSubmit(event) {
+			    event.preventDefault()
+			    const userName = event.target.elements[0].value
+			    const repo = event.target.elements[1].value
+			    const path = `/repos/${userName}/${repo}`
+			  //1)  browserHistory.push(path)      使用browserHistory.push
+			  //2) this.context.router.push(path)  使用context对象
+			  }
+			  render(){
+			  	return (<div>
+			  		<form onSubmit={this.handleSubmit}>
+			  			<input type="text" placeholder="userName"/>
+			  			<input type="text" placeholder="repo"/>
+			  			<button type="submit">Go</button>
+					</form>
+			  	</div>)
+			  }
+		}
+ 
+			
+
+</body>
+</html>
