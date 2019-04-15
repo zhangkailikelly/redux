@@ -123,7 +123,7 @@ React-Redux    用于衔接react与redux，将组件分为UI组件和容器组�
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 React-Router
-	import {Router,Route} from "react-router"
+	import {Router,Route} from "react-router"   //v3
 	<Router history={hashHistory/browerHistory}>		//hashHistory:路由切换由URL的hash值决定
 		<Route path="/" component={App}/>
 		<Route path="/About" component={About}}/>		//route 中path值以"/"开头,均表示绝对路径,否则路由为父组件路径与子组件路径的组合
@@ -203,6 +203,100 @@ React-Router
 			  	</div>)
 			  }
 		}
+			
+	import {BrowserRouter, Switch, Redirect, Route} from "react-router-dom";  v4
+	/**
+	 *  <Route exact strict/>
+	 *  strict 有结尾斜线的路径只能匹配有斜线的
+	 *  exact  则要求路径与  location.pathname  必须完全匹配
+	 *  <switch/>  元素且只有与当前访问地址匹配的第一个子节点才会被渲染。
+	 *  <Route>    不写path 默认匹配所有
+	 */
+	class App extends Component {
+	    render() {
+		return (
+		    <Provider store={store}>
+			<BrowserRouter basename='/'>
+			    <ScrollToTop>
+				<Switch>
+				    <Route path="/" exact component={login}/>
+				    <Route path="/admin" component={async_logind}/>
+				    <Route path="/forgetPW" component={forget_pw}/>
+				    <Redirect to="/"/>
+				</Switch>
+			    </ScrollToTop>
+			</BrowserRouter>
+		    </Provider>
+		);
+	    }
+	}
+
+	//结合动态路由递归便利生成菜单列表		
+	 componentWillMount() {
+        const {data, match, location, dispatch, history} = this.props;
+        const {routes} = this.state;
+        //TODO 便利资源时，判断是否是菜单还是按钮，按钮就不返回
+        /**
+         * 递归获取资源
+         * */
+        const buttonArr = [];//按钮权限集合
+        const mapRoute = routeArr => {
+            const getMenuItem = (v, name = '') => {
+                v.type == 2 ? buttonArr.push(v) : '';//按钮权限集合
+                v.path && allComponent[v.path] ? this.state.routes.push(<Route key={v} exact strict
+                                                                               component={allComponent[v.path]}
+                                                                               path={`${match.path}/${v.path}`}/>) : "";//资源集合
+                let result;
+                if (v.type == 1) {
+                    let menuItem = (v.children || []).map(i => getMenuItem(i, v.name))
+                    //生成菜单列表
+                    if (v.path) {//todo  菜单类型  无children或children为button类型
+                        this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
+                        result = <Menu.Item key={`${name},${v.name}`}>{v.path ?
+                            <Link to={`${match.path}/${v.path}`}> {v.name}</Link> : v.name}</Menu.Item>
+                    } else {
+                        this.state.rootSubmenuKeys.push(`${v.name}`)
+                        result = <SubMenu key={`${v.name}`} title={<span>
+                        <Icon
+                            type={this.state.iconType[v.name] || "setting"}/><span>{v.name}</span></span>}>
+                            {menuItem}
+                        </SubMenu>
+                    }
+                }
+                return result;
+            }
+            return routeArr.map(v => getMenuItem(v, v.name)).filter(k => k)
+
+        }
+
+        let ItemMenus = mapRoute(data.routes);  //后台 back
+        if (!routes.length) {
+            Modal.error({
+                title: "系统提示",
+                content: "当前角色所对应页面不存在，请联系管理员重新分配。",
+                onOk: () => {
+                    history.push("/")
+                }
+            });
+            return;
+        }
+        dispatch({type: "updateButton", data: buttonArr})
+        // const bread = this.state.pathToName[location.pathname] || this.state.pathToName[this.state.routes[0].props.path] || []
+        this.setState({
+            // openKeys: bread.slice(0, 1),
+            menu: ItemMenus,
+            // selectedKeys: bread.join()
+        })
+    }
+     render(){
+     return <Switch>
+		{this.state.routes}
+		<Redirect exact from={`${match.path}`} to={`${routes[0].props.path}`}/>
+		<Route component={NotFound}/>
+	    </Switch>
+			
+    }
+
  
 			
 
