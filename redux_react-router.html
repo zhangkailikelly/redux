@@ -239,37 +239,35 @@ React-Router
         /**
          * 递归获取资源
          * */
-        const buttonArr = [];//按钮权限集合
-        const mapRoute = routeArr => {
-            const getMenuItem = (v, name = '') => {
-                v.type == 2 ? buttonArr.push(v) : '';//按钮权限集合
-                v.path && allComponent[v.path] ? this.state.routes.push(<Route key={v} exact strict
-                                                                               component={allComponent[v.path]}
-                                                                               path={`${match.path}/${v.path}`}/>) : "";//资源集合
-                let result;
-                if (v.type == 1) {
-                    let menuItem = (v.children || []).map(i => getMenuItem(i, v.name))
-                    //生成菜单列表
-                    if (v.path) {//todo  菜单类型  无children或children为button类型
-                        this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
-                        result = <Menu.Item key={`${name},${v.name}`}>{v.path ?
-                            <Link to={`${match.path}/${v.path}`}> {v.name}</Link> : v.name}</Menu.Item>
-                    } else {
-                        this.state.rootSubmenuKeys.push(`${v.name}`)
-                        result = <SubMenu key={`${v.name}`} title={<span>
+       const buttonArr = [];//按钮权限集合
+        const getMenuItem = (arr, name = '') => arr.map(v => {
+            v.type == 2 ? buttonArr.push(v) : '';//按钮权限集合
+            v.path && allComponent[v.path] ? this.state.routes.push(<Route key={v} exact strict
+                                                                           component={allComponent[v.path]}
+                                                                           path={`${match.path}/${v.path}`}/>) : "";//资源集合
+            let result;
+            if (v.type === 1) {
+                let menuItem = Array.isArray(v.children) && v.children.length > 0 ? getMenuItem(v.children, v.path ? "" : v.name) : [];
+                //生成菜单列表
+                if (v.path) {//todo  菜单类型  无children或children为button类型
+                    this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
+                    result = <Menu.Item key={`${name},${v.name}`}>{
+                        <Link to={`${match.path}/${v.path}`}><Icon type={!name && "setting"}/><span> {v.name}</span>
+                        </Link>}</Menu.Item>
+                } else {
+                    this.state.rootSubmenuKeys.push(`${v.name}`)
+                    result = <SubMenu key={`${v.name}`} title={<span>
                         <Icon
                             type={this.state.iconType[v.name] || "setting"}/><span>{v.name}</span></span>}>
-                            {menuItem}
-                        </SubMenu>
-                    }
+                        {menuItem}
+                    </SubMenu>
                 }
-                return result;
             }
-            return routeArr.map(v => getMenuItem(v, v.name)).filter(k => k)
+            return result;
+        })
 
-        }
 
-        let ItemMenus = mapRoute(data.routes);  //后台 back
+        let ItemMenus = getMenuItem(data.routes).filter(v => v);  //过滤undefined
         if (!routes.length) {
             Modal.error({
                 title: "系统提示",
