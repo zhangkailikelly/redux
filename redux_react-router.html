@@ -262,7 +262,10 @@ React-Router
                         {menuItem}
                     </SubMenu>
                 }
-            }
+            }else if(v.type===2&&v.path){
+                    this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
+                }
+
             return result;
         })
 
