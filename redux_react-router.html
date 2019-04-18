@@ -234,38 +234,41 @@ React-Router
 	//结合动态路由递归便利生成菜单列表		
 	 componentWillMount() {
         const {data, match, location, dispatch, history} = this.props;
-        const {routes} = this.state;
+        const {routes, routesBtn, pathToName, rootSubmenuKeys, iconType} = this.state;
         //TODO 便利资源时，判断是否是菜单还是按钮，按钮就不返回
         /**
          * 递归获取资源
          * */
-       const buttonArr = [];//按钮权限集合
+        const buttonArr = [];//按钮权限集合
         const getMenuItem = (arr, name = '') => arr.map(v => {
-            v.type == 2 ? buttonArr.push(v) : '';//按钮权限集合
-            v.path && allComponent[v.path] ? this.state.routes.push(<Route key={v} exact strict
-                                                                           component={allComponent[v.path]}
-                                                                           path={`${match.path}/${v.path}`}/>) : "";//资源集合
+
             let result;
             if (v.type === 1) {
-                let menuItem = Array.isArray(v.children) && v.children.length > 0 ? getMenuItem(v.children, v.path ? "" : v.name) : [];
+                v.path && allComponent[v.path] ? routes.push(<Route key={v} exact strict
+                                                                    component={allComponent[v.path]}
+                                                                    path={`${match.path}/${v.path}`}/>) : "";//资源集合
+                let menuItem = Array.isArray(v.children) && v.children.length > 0 ? getMenuItem(v.children, v.name) : [];
                 //生成菜单列表
                 if (v.path) {//todo  菜单类型  无children或children为button类型
-                    this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
+                    pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
                     result = <Menu.Item key={`${name},${v.name}`}>{
-                        <Link to={`${match.path}/${v.path}`}><Icon type={!name && "setting"}/><span> {v.name}</span>
+                        <Link to={`${match.path}/${v.path}`}>{!name && <Icon type={"setting"}/>} <span>{v.name}</span>
                         </Link>}</Menu.Item>
                 } else {
-                    this.state.rootSubmenuKeys.push(`${v.name}`)
+                    rootSubmenuKeys.push(`${v.name}`)
                     result = <SubMenu key={`${v.name}`} title={<span>
                         <Icon
-                            type={this.state.iconType[v.name] || "setting"}/><span>{v.name}</span></span>}>
+                            type={iconType[v.name] || "setting"}/><span>{v.name}</span></span>}>
                         {menuItem}
                     </SubMenu>
                 }
-            }else if(v.type===2&&v.path){
-                    this.state.pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
-                }
-
+            } else if (v.type == 2 && v.path) {
+                v.path && allComponent[v.path] ? routesBtn.push(<Route key={v} exact strict
+                                                                       component={allComponent[v.path]}
+                                                                       path={`${match.path}/${v.path}`}/>) : "";//资源集合
+                buttonArr.push(v)//按钮权限集合
+                pathToName[`/admin/${v.path}`] = `${name},${v.name}`.split(",");
+            }
             return result;
         })
 
@@ -289,9 +292,10 @@ React-Router
             // selectedKeys: bread.join()
         })
     }
+
      render(){
      return <Switch>
-		{this.state.routes}
+		{[...routes,...routesBtn]}
 		<Redirect exact from={`${match.path}`} to={`${routes[0].props.path}`}/>
 		<Route component={NotFound}/>
 	    </Switch>
